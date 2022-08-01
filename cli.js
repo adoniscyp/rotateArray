@@ -24,13 +24,72 @@ function processRow(row){
    }
    const newArr = [];
    while(row.length) newArr.push(row.splice(0,Math.sqrt(n)));
-   rotateArray(newArr)
+   rotateAll(newArr)
+
+  
+}
+
+function rotateAll(matrix){
+    let rotatedMatrix = matrix;
+    let stack=[];
+    let merged;
+    var subMatrix = rotateArray(matrix)
+    stack.push(rotatedMatrix);
+
+    while(true){
+        subMatrix = rotateArray(createSubMatrix(subMatrix))
+        stack.push(subMatrix);
+        if(subMatrix.length === 0){
+            let pop1 = stack.pop()
+            let pop2 = stack.pop()
+            merged = mergeMatrices(pop1, pop2);
+            while(stack.length >0){
+                let pop = stack.pop()
+                merged = mergeMatrices(merged, pop);
+                console.log(merged)
+            }
+            break;
+        }
+ }
+
+    displayMatrix(merged);
+}
+
+function mergeMatrices(subMatrix,matrix){
+    // subMatrix = [[10,6],[11,7]];
+    // subMatrix = [[12,7,8],[17,13,9],[18,19,14]];
+
+    // displayMatrix(subMatrix);
+    for (let i = 1; i < matrix.length-1; i++) {
+        for (let j = 1; j < matrix.length-1; j++) {
+            matrix[i][j]=subMatrix[i-1][j-1];
+        }
+    }
+    // displayMatrix(matrix);
+    return matrix;
+
+}
+
+function createSubMatrix(matrix){
+    let subMatrix = [];
+    for (let i = 1; i < matrix.length-1; i++) {
+        let subMatrixEntry = [];
+        for (let j = 1; j < matrix.length-1; j++) {
+            subMatrixEntry.push(matrix[i][j]);
+        }
+        subMatrix.push(subMatrixEntry)
+    }
+    // console.log(subMatrix)
+    return subMatrix;
 }
 
 function rotateArray(matrix){
-    console.log(matrix);
+    if(matrix.length <=1 ){
+        return matrix;
+    }
+
     let n = matrix.length;
-    displayMatrix(matrix)
+    
     let carry = matrix[0][0];
     for(let i=0;i<n-1;i++){
         matrix[i][0]=matrix[i+1][0];
@@ -48,8 +107,7 @@ function rotateArray(matrix){
     }
     matrix[0][1] = carry;
 
-    displayMatrix(matrix)
-
+    return matrix
 }
 
 function displayMatrix(array){
