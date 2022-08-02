@@ -1,121 +1,85 @@
 const fs = require('fs');
 const path = require('path');
 const csv = require('fast-csv');
+const matriX = require('./lib/matrix.js');
 
-fs.createReadStream(path.resolve(__dirname, 'testData', 'testData2.csv'))
+function parseJSON(row){
+    try {
+      return JSON.parse(row);
+    } catch(ex){
+      return [];
+    }
+}
+function readStream(dataPath){
+    console.log("id,json,is_valid");
+    fs.createReadStream(path.resolve(__dirname, '.', dataPath))
     .pipe(csv.parse({ headers: true }))
     .on('error', error => console.error(error))
     .on('data', row => {
         try {
-            processRow(JSON.parse(row.json))
+            let res = processRow(parseJSON(row.json))
+            if(res.length === 0){
+                console.log(row.id + ",\"[]\",false" )
+            }
+            else{
+                console.log(row.id+ ",\""+JSON.stringify(res)+"\",true")
+            }
         } catch (error) {
             console.log("error parsing row", error);
         }
       }
     )
-    .on('end', rowCount => console.log(`Parsed ${rowCount} rows`));
+    .on('end', rowCount =>{});
+}
 
 function processRow(row){
   let n = row.length;
+  // Empty table or unequal number of columns and rows is invalid input  
   if(n === 0 || Math.sqrt(n) % 1 !== 0 )
    {
-    console.log("[]");
     return [];
    }
-   const newArr = [];
-   while(row.length) newArr.push(row.splice(0,Math.sqrt(n)));
-   rotateAll(newArr)
-
-  
+   const matrix2D = [];
+   // Converting flat array to 2D array   
+   while(row.length) matrix2D.push(row.splice(0,Math.sqrt(n)));
+   // Rotating the array converting back to 1D   
+   return rotateAll(matrix2D).flat();
 }
 
+// Rotating the outmost square, then the square inside the outmost square until no more squares left
+// All squares are rotated and merged back together into a single square
 function rotateAll(matrix){
     let rotatedMatrix = matrix;
     let stack=[];
     let merged;
-    var subMatrix = rotateArray(matrix)
+    var subMatrix = matriX.rotateArray(matrix)
     stack.push(rotatedMatrix);
 
     while(true){
-        subMatrix = rotateArray(createSubMatrix(subMatrix))
+        subMatrix = matriX.rotateArray(matriX.createSubMatrix(subMatrix))
         stack.push(subMatrix);
+        // We reached the innermost square
         if(subMatrix.length === 0){
             let pop1 = stack.pop()
             let pop2 = stack.pop()
-            merged = mergeMatrices(pop1, pop2);
+            merged = matriX.mergeMatrices(pop1, pop2);
             while(stack.length >0){
                 let pop = stack.pop()
-                merged = mergeMatrices(merged, pop);
-                console.log(merged)
+                merged = matriX.mergeMatrices(merged, pop);
             }
             break;
         }
- }
+    }
 
-    displayMatrix(merged);
+    return merged;
 }
 
-function mergeMatrices(subMatrix,matrix){
-    // subMatrix = [[10,6],[11,7]];
-    // subMatrix = [[12,7,8],[17,13,9],[18,19,14]];
 
-    // displayMatrix(subMatrix);
-    for (let i = 1; i < matrix.length-1; i++) {
-        for (let j = 1; j < matrix.length-1; j++) {
-            matrix[i][j]=subMatrix[i-1][j-1];
-        }
-    }
-    // displayMatrix(matrix);
-    return matrix;
-
+const myArgs = process.argv.slice(2);
+if(myArgs.length === 0){
+    console.log("You need to provide input .csv via args. Try: $node cli.js testData/testData1.csv")
+}
+else{
+    readStream(myArgs[0]);
 }
 
-function createSubMatrix(matrix){
-    let subMatrix = [];
-    for (let i = 1; i < matrix.length-1; i++) {
-        let subMatrixEntry = [];
-        for (let j = 1; j < matrix.length-1; j++) {
-            subMatrixEntry.push(matrix[i][j]);
-        }
-        subMatrix.push(subMatrixEntry)
-    }
-    // console.log(subMatrix)
-    return subMatrix;
-}
-
-function rotateArray(matrix){
-    if(matrix.length <=1 ){
-        return matrix;
-    }
-
-    let n = matrix.length;
-    
-    let carry = matrix[0][0];
-    for(let i=0;i<n-1;i++){
-        matrix[i][0]=matrix[i+1][0];
-    }
-
-    for(let i=0;i<n-1;i++){
-        matrix[n-1][i]=matrix[n-1][i+1];
-    }
-
-    for(let i=0;i<n-1;i++){
-        matrix[n-i-1][n-1]=matrix[n-i-2][n-1];
-    }
-    for(let i=0;i<n-1;i++){
-        matrix[0][n-i-1]=matrix[0][n-i-2];
-    }
-    matrix[0][1] = carry;
-
-    return matrix
-}
-
-function displayMatrix(array){
-    for (let i = 0; i < array.length; i++) {
-        for (let j = 0; j < array.length; j++) {
-            process.stdout.write(array[i][j].toString()+"|")
-        }
-        console.log("")
-    }
-    console.log("-----")
-}
